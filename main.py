@@ -3,6 +3,7 @@ import asyncio
 import os
 
 import aiofiles
+import aiofiles.os
 from aiohttp import ClientSession, ClientTimeout, client_exceptions
 from bs4 import BeautifulSoup
 
@@ -16,8 +17,10 @@ async def download_one(news_id: str, url: str, args: argparse.Namespace, limit: 
         args.directory,
         news_id
     )
-    if not os.path.isdir(news_dir):
-        os.mkdir(news_dir)
+    try:
+        await aiofiles.os.mkdir(news_dir)
+    except FileExistsError:
+        pass
 
     async with limit:
         try:
@@ -81,11 +84,11 @@ async def download_all(news: dict, args: argparse.Namespace):
         os.path.dirname(os.path.abspath(__file__)),
         args.directory,
     )
-    if os.path.isdir(DIR):
+    if await aiofiles.os.path.isdir(str(DIR)):
         downloaded_news = next(os.walk(str(DIR)))[1]
     else:
         print(f'Directory {DIR} does not exists')
-        exit()
+        return
     tasks = list()
     comments = list()
     limit = asyncio.Semaphore(args.workers)
